@@ -1,4 +1,4 @@
-#include <SparkFunSi4703.h>
+#include <Si4703_Breakout.h>
 #include <Wire.h>
 
 int resetPin = 2;

@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "SparkFunSi4703.h"
+#include "Si4703_Breakout.h"
 #include "Wire.h"
 
 Si4703_Breakout::Si4703_Breakout(int resetPin, int sdioPin, int sclkPin)
