@@ -73,6 +73,8 @@ private:
     RdsInfo rdsInfo;
     uint8_t radioTextLastStateClearBit;
     uint8_t alternateFrequenciesIndex;
+    char tmpRadioText[65] = {0}; // 64 + 0 terminated. Data is built in this array before being copied to rdsInfo.radioText
+    char tmpStationName[9] = {0}; // 8 + 0 terminated. Data is built in this array before being copied to rdsInfo.stationName
 
     void si4703_init();
     void readRegisters();

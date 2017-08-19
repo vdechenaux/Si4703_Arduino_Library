@@ -89,15 +89,36 @@ void Si4703_Breakout::readRDS()
 
             if (blockBextra->clearScreen != radioTextLastStateClearBit) {
                 radioTextLastStateClearBit = blockBextra->clearScreen;
-                memset(rdsInfo.radioText, 0, sizeof(rdsInfo.radioText));
+                memset(tmpRadioText, 0, sizeof(tmpRadioText));
             }
 
             if (blockBextra->segmentOffset > 15) return;
             // todo: write in tmp var, not the same var the user get
-            rdsInfo.radioText[blockBextra->segmentOffset*4] = blockC->A;
-            rdsInfo.radioText[blockBextra->segmentOffset*4+1] = blockC->B;
-            rdsInfo.radioText[blockBextra->segmentOffset*4+2] = blockD->C;
-            rdsInfo.radioText[blockBextra->segmentOffset*4+3] = blockD->D;
+            tmpRadioText[blockBextra->segmentOffset*4] = blockC->A;
+            tmpRadioText[blockBextra->segmentOffset*4+1] = blockC->B;
+            tmpRadioText[blockBextra->segmentOffset*4+2] = blockD->C;
+            tmpRadioText[blockBextra->segmentOffset*4+3] = blockD->D;
+
+            uint8_t copyFullMessage = 1;
+            for (int i=0; i<64; i++) {
+                // Each message must ends with the carriage return (0D hex) character if the length is < 64
+                if (tmpRadioText[i] == '\r') {
+                    // \r found: copy all chars before \r to radioText and fill the end with zeros
+                    memset(rdsInfo.radioText, 0, sizeof(rdsInfo.radioText));
+                    memcpy(rdsInfo.radioText, tmpRadioText, i);
+                    copyFullMessage = 0;
+                    break;
+                }
+                if (tmpRadioText[i] == 0) {
+                    // one char is \0 but we didn't see any \r : message is incomplete
+                    copyFullMessage = 0;
+                    break;
+                }
+            }
+
+            if (copyFullMessage) {
+                memcpy(rdsInfo.radioText, tmpRadioText, sizeof(rdsInfo.radioText));
+            }
         } else if (blockB->groupType == 0) {
             /*
              * Station Name
@@ -129,8 +150,20 @@ void Si4703_Breakout::readRDS()
 
             if (blockBextra->segmentOffset > 3) return;
 
-            rdsInfo.stationName[blockBextra->segmentOffset*2] = blockD->A;
-            rdsInfo.stationName[blockBextra->segmentOffset*2+1] = blockD->B;
+            tmpStationName[blockBextra->segmentOffset*2] = blockD->A;
+            tmpStationName[blockBextra->segmentOffset*2+1] = blockD->B;
+            uint8_t copyFullMessage = 1;
+            for (int i=0; i<8; i++) {
+                if (tmpStationName[i] == 0) {
+                    // one char is \0 : message is incomplete
+                    copyFullMessage = 0;
+                    break;
+                }
+            }
+
+            if (copyFullMessage) {
+                memcpy(rdsInfo.stationName, tmpStationName, sizeof(rdsInfo.stationName));
+            }
         }
         delay(40); //Wait for the RDS bit to clear
     }
@@ -253,6 +286,12 @@ int Si4703_Breakout::seek(byte seekDirection){
         readRegisters();
         if( (si4703_registers[STATUSRSSI] & (1<<STC)) == 0) break; //Tuning complete!
     }
+
+    // put incorrect value to force clear
+    radioTextLastStateClearBit = 0xFF;
+    // clear RDS info
+    rdsInfo = RdsInfo();
+    memset(tmpStationName, 0, sizeof(tmpStationName));
 
     if(valueSFBL) { //The bit was set indicating we hit a band limit or failed to find a station
         return(0);
