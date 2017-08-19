@@ -49,20 +49,31 @@ cables. Too short of a cable may degrade reception.
 class Si4703_Breakout
 {
 public:
+    struct RdsInfo
+    {
+        char stationName[9] = {0}; // 8 + 0 terminated
+        char radioText[65] = {0}; // 64 + 0 terminated
+        uint16_t programIdentificationCode;
+        uint8_t alternateFrequenciesCount;
+        uint16_t alternateFrequencies[25] = {0};
+    };
+
     Si4703_Breakout(int resetPin, int sdioPin, int sclkPin);
     void powerOn();					// call in setup
     void setChannel(int channel);  	// 3 digit channel number
     int seekUp(); 					// returns the tuned channel or 0
     int seekDown();
     void setVolume(int volume); 	// 0 to 15
-    void readRDS(char* message, long timeout);
-    // message should be at least 9 chars
-    // result will be null terminated
-    // timeout in milliseconds
+    void readRDS();
+    RdsInfo getRdsInfo() { return rdsInfo; }
 private:
     int  _resetPin;
     int  _sdioPin;
     int  _sclkPin;
+    RdsInfo rdsInfo;
+    uint8_t radioTextLastStateClearBit;
+    uint8_t alternateFrequenciesIndex;
+
     void si4703_init();
     void readRegisters();
     byte updateRegisters();
@@ -116,6 +127,58 @@ private:
     static const uint16_t  AFCRL = 12;
     static const uint16_t  RDSS = 11;
     static const uint16_t  STEREO = 8;
+
+    struct RdsBlockA
+    {
+        uint16_t programIdentificationCode;
+    };
+
+    struct RdsBlockB
+    {
+        uint8_t extra : 5;
+        uint8_t PTY : 5;
+        uint8_t TP : 1;
+        uint8_t isMessageVersionB : 1;
+        uint8_t groupType : 4;
+    };
+
+    struct RdsBlockB_Extra_0_StationName
+    {
+        uint8_t segmentOffset : 2;
+        uint8_t DI : 1;
+        uint8_t MS : 1;
+        uint8_t TA : 1;
+    };
+
+    struct RdsBlockC_0_AlternativeFrequency
+    {
+        uint8_t AF1;
+        uint8_t AF0;
+    };
+
+    struct RdsBlockD_0_StationName
+    {
+        char B;
+        char A;
+    };
+
+    struct RdsBlockB_Extra_2_RadioText
+    {
+        uint8_t segmentOffset : 4;
+        uint8_t clearScreen : 1;
+    };
+
+    struct RdsBlockC_2_RadioText
+    {
+        char B;
+        char A;
+    };
+
+    struct RdsBlockD_2_RadioText
+    {
+        char D;
+        char C;
+    };
 };
 
 #endif

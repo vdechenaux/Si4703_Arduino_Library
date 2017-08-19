@@ -69,45 +69,74 @@ void Si4703_Breakout::setVolume(int volume)
     updateRegisters(); //Update
 }
 
-void Si4703_Breakout::readRDS(char* buffer, long timeout)
-{ 
-    long endTime = millis() + timeout;
-    boolean completed[] = {false, false, false, false};
-    int completedCount = 0;
-    while(completedCount < 4 && millis() < endTime) {
-        readRegisters();
-        if(si4703_registers[STATUSRSSI] & (1<<RDSR)){
-            // ls 2 bits of B determine the 4 letter pairs
-            // once we have a full set return
-            // if you get nothing after 20 readings return with empty string
-            uint16_t b = si4703_registers[RDSB];
-            int index = b & 0x03;
-            if (! completed[index] && b < 500)
-            {
-                completed[index] = true;
-                completedCount ++;
-                char Dh = (si4703_registers[RDSD] & 0xFF00) >> 8;
-                char Dl = (si4703_registers[RDSD] & 0x00FF);
-                buffer[index * 2] = Dh;
-                buffer[index * 2 +1] = Dl;
-                // Serial.print(si4703_registers[RDSD]); Serial.print(" ");
-                // Serial.print(index);Serial.print(" ");
-                // Serial.write(Dh);
-                // Serial.write(Dl);
-                // Serial.println();
-            }
-            delay(40); //Wait for the RDS bit to clear
-        }
-        else {
-            delay(30); //From AN230, using the polling method 40ms should be sufficient amount of time between checks
-        }
-    }
-    if (millis() >= endTime) {
-        buffer[0] ='\0';
-        return;
-    }
+void Si4703_Breakout::readRDS()
+{
+    readRegisters();
+    if(si4703_registers[STATUSRSSI] & (1<<RDSR)){
+        RdsBlockA *blockA = (RdsBlockA*)&si4703_registers[RDSA];
+        RdsBlockB *blockB = (RdsBlockB*)&si4703_registers[RDSB];
 
-    buffer[8] = '\0';
+        rdsInfo.programIdentificationCode = blockA->programIdentificationCode;
+
+        if (blockB->groupType == 2 && !blockB->isMessageVersionB) {
+            /*
+             * Radio Text
+             */
+            RdsBlockC_2_RadioText *blockC = (RdsBlockC_2_RadioText*)&si4703_registers[RDSC];
+            RdsBlockD_2_RadioText *blockD = (RdsBlockD_2_RadioText*)&si4703_registers[RDSD];
+            uint8_t tmp = blockB->extra;
+            RdsBlockB_Extra_2_RadioText *blockBextra = (RdsBlockB_Extra_2_RadioText*)&tmp;
+
+            if (blockBextra->clearScreen != radioTextLastStateClearBit) {
+                radioTextLastStateClearBit = blockBextra->clearScreen;
+                memset(rdsInfo.radioText, 0, sizeof(rdsInfo.radioText));
+            }
+
+            if (blockBextra->segmentOffset > 15) return;
+            // todo: write in tmp var, not the same var the user get
+            rdsInfo.radioText[blockBextra->segmentOffset*4] = blockC->A;
+            rdsInfo.radioText[blockBextra->segmentOffset*4+1] = blockC->B;
+            rdsInfo.radioText[blockBextra->segmentOffset*4+2] = blockD->C;
+            rdsInfo.radioText[blockBextra->segmentOffset*4+3] = blockD->D;
+        } else if (blockB->groupType == 0) {
+            /*
+             * Station Name
+             * Alternative Frequency
+             */
+            RdsBlockD_0_StationName *blockD = (RdsBlockD_0_StationName*)&si4703_registers[RDSD];
+            uint8_t tmp = blockB->extra;
+            RdsBlockB_Extra_0_StationName *blockBextra = (RdsBlockB_Extra_0_StationName*)&tmp;
+
+            if (!blockB->isMessageVersionB) {
+                RdsBlockC_0_AlternativeFrequency *blockC = (RdsBlockC_0_AlternativeFrequency*)&si4703_registers[RDSC];
+
+                if (blockC->AF0 > 224 && blockC->AF0 < 250) {
+                    rdsInfo.alternateFrequenciesCount = blockC->AF0 - 224;
+                    alternateFrequenciesIndex = 0;
+                }
+                if (blockC->AF1 > 224 && blockC->AF1 < 250) {
+                    rdsInfo.alternateFrequenciesCount = blockC->AF1 - 224;
+                    alternateFrequenciesIndex = 0;
+                }
+
+                if (blockC->AF0 > 0 && blockC->AF0 < 205 && alternateFrequenciesIndex < rdsInfo.alternateFrequenciesCount) {
+                    rdsInfo.alternateFrequencies[alternateFrequenciesIndex++] = 875 + blockC->AF0;
+                }
+                if (blockC->AF1 > 0 && blockC->AF1 < 205 && alternateFrequenciesIndex < rdsInfo.alternateFrequenciesCount) {
+                    rdsInfo.alternateFrequencies[alternateFrequenciesIndex++] = 875 + blockC->AF1;
+                }
+            }
+
+            if (blockBextra->segmentOffset > 3) return;
+
+            rdsInfo.stationName[blockBextra->segmentOffset*2] = blockD->A;
+            rdsInfo.stationName[blockBextra->segmentOffset*2+1] = blockD->B;
+        }
+        delay(40); //Wait for the RDS bit to clear
+    }
+    else {
+        delay(30); //From AN230, using the polling method 40ms should be sufficient amount of time between checks
+    }
 }
 
 

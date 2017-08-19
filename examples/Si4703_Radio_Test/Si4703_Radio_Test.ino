@@ -28,6 +28,8 @@ void setup()
 
 void loop()
 {
+  radio.readRDS();
+
   if (Serial.available())
   {
     char ch = Serial.read();
@@ -69,10 +71,14 @@ void loop()
     }
     else if (ch == 'r')
     {
-      Serial.println("RDS listening");
-      radio.readRDS(rdsBuffer, 15000);
-      Serial.print("RDS heard:");
-      Serial.println(rdsBuffer);      
+      Serial.println(radio.getRdsInfo().radioText);
+      Serial.println(radio.getRdsInfo().stationName);
+      Serial.println(radio.getRdsInfo().programIdentificationCode, HEX);
+
+      for (int i=0; i<radio.getRdsInfo().alternateFrequenciesCount; i++) {
+        Serial.print(radio.getRdsInfo().alternateFrequencies[i] / 10.0);
+        Serial.println("Mhz");
+      }   
     }
   }
 }
