@@ -69,6 +69,15 @@ void Si4703_Breakout::setVolume(int volume)
     updateRegisters(); //Update
 }
 
+bool Si4703_Breakout::toggleMute()
+{
+    readRegisters();
+    si4703_registers[POWERCFG] ^= (1<<DMUTE); //Toggle Mute bit
+    updateRegisters();
+
+    return !(si4703_registers[POWERCFG] & (1<<DMUTE));
+}
+
 void Si4703_Breakout::readRDS()
 {
     readRegisters();

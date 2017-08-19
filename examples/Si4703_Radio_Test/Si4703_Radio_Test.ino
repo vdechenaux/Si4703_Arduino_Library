@@ -43,6 +43,10 @@ void loop()
       channel = radio.seekDown();
       displayInfo();
     } 
+    else if (ch == 'm') 
+    {
+      Serial.println(radio.toggleMute() ? "MUTE" : "Sound is back");
+    } 
     else if (ch == '+') 
     {
       volume ++;

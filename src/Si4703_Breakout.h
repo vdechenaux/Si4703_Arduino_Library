@@ -66,6 +66,7 @@ public:
     void setVolume(int volume); 	// 0 to 15
     void readRDS();
     RdsInfo getRdsInfo() { return rdsInfo; }
+    bool toggleMute(); // true if sound => silence. false if silence => sound
 private:
     int  _resetPin;
     int  _sdioPin;
