@@ -82,7 +82,9 @@ void loop()
       for (int i=0; i<radio.getRdsInfo().alternateFrequenciesCount; i++) {
         Serial.print(radio.getRdsInfo().alternateFrequencies[i] / 10.0);
         Serial.println("Mhz");
-      }   
+      }
+
+      Serial.println(radio.isStereo() ? "STEREO" : "MONO");
     }
   }
 }

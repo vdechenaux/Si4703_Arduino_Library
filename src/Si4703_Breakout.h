@@ -67,6 +67,7 @@ public:
     void readRDS();
     RdsInfo getRdsInfo() { return rdsInfo; }
     bool toggleMute(); // true if sound => silence. false if silence => sound
+    bool isStereo();
 private:
     int  _resetPin;
     int  _sdioPin;

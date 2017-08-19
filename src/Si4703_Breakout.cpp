@@ -78,6 +78,13 @@ bool Si4703_Breakout::toggleMute()
     return !(si4703_registers[POWERCFG] & (1<<DMUTE));
 }
 
+bool Si4703_Breakout::isStereo()
+{
+    readRegisters();
+
+    return si4703_registers[STATUSRSSI] & (1<<STEREO);
+}
+
 void Si4703_Breakout::readRDS()
 {
     readRegisters();
