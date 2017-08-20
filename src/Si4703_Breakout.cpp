@@ -85,6 +85,13 @@ bool Si4703_Breakout::isStereo()
     return si4703_registers[STATUSRSSI] & (1<<STEREO);
 }
 
+uint8_t Si4703_Breakout::getSignalStrength()
+{
+    readRegisters();
+
+    return si4703_registers[STATUSRSSI] & 0x00FF;
+}
+
 void Si4703_Breakout::readRDS()
 {
     readRegisters();

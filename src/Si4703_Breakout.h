@@ -68,6 +68,7 @@ public:
     RdsInfo getRdsInfo() { return rdsInfo; }
     bool toggleMute(); // true if sound => silence. false if silence => sound
     bool isStereo();
+    uint8_t getSignalStrength(); // In dBuV. It does not report RSSI levels greater than 75 dBuV.
 private:
     int  _resetPin;
     int  _sdioPin;

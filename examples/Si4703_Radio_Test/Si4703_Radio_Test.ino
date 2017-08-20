@@ -85,6 +85,7 @@ void loop()
       }
 
       Serial.println(radio.isStereo() ? "STEREO" : "MONO");
+      Serial.println(radio.getSignalStrength()); // in dBuV
     }
   }
 }
