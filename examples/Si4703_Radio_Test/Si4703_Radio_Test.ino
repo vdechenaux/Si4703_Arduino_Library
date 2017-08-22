@@ -1,14 +1,12 @@
 #include <Si4703_Breakout.h>
-#include <Wire.h>
 
-int resetPin = 2;
-int SDIO = A4;
-int SCLK = A5;
+const int resetPin = 2;
+const int SDIO = A4;
+const int SCLK = A5;
 
 Si4703_Breakout radio(resetPin, SDIO, SCLK);
 int channel;
-int volume;
-char rdsBuffer[10];
+int volume = 1;
 
 void setup()
 {
@@ -23,7 +21,7 @@ void setup()
   
 
   radio.powerOn();
-  radio.setVolume(0);
+  radio.setVolume(volume);
 }
 
 void loop()
@@ -83,15 +81,14 @@ void loop()
         Serial.print(radio.getRdsInfo().alternateFrequencies[i] / 10.0);
         Serial.println("Mhz");
       }
-
-      Serial.println(radio.isStereo() ? "STEREO" : "MONO");
-      Serial.println(radio.getSignalStrength()); // in dBuV
     }
   }
 }
 
 void displayInfo()
 {
-   Serial.print("Channel:"); Serial.print(channel); 
-   Serial.print(" Volume:"); Serial.println(volume); 
+   Serial.print("Channel: "); Serial.println(channel); 
+   Serial.print("Volume: "); Serial.println(volume); 
+   Serial.println(radio.isStereo() ? "STEREO" : "MONO");
+   Serial.print("RSSI: "); Serial.println(radio.getSignalStrength()); // in dBµV
 }
