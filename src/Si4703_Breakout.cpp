@@ -123,6 +123,7 @@ void Si4703_Breakout::readRDS()
             tmpRadioText[blockBextra->segmentOffset*4+3] = blockD->D;
 
             uint8_t copyFullMessage = 1;
+            uint8_t firstSpacePosWithoutCharsAfter = 0;
             for (int i=0; i<64; i++) {
                 // Each message must ends with the carriage return (0D hex) character if the length is < 64
                 if (tmpRadioText[i] == '\r') {
@@ -137,10 +138,18 @@ void Si4703_Breakout::readRDS()
                     copyFullMessage = 0;
                     break;
                 }
+
+                // Some stations doesn't use '\r' and send spaces 0x20 after the text to fill 64 chars. We trim it.
+                if (tmpRadioText[i] == ' ' && !firstSpacePosWithoutCharsAfter) {
+                    firstSpacePosWithoutCharsAfter = i; // Current char is a space and previous char is not space. We update the var to keep the position
+                } else if (tmpRadioText[i] != ' ') {
+                    firstSpacePosWithoutCharsAfter = 0; // We found a char after one (or more) space, reset the position var
+                }
             }
 
             if (copyFullMessage) {
-                memcpy(rdsInfo.radioText, tmpRadioText, sizeof(rdsInfo.radioText));
+                // If firstSpacePosWithoutCharsAfter is not zero, we trim the string. Otherwise we copy the full message
+                memcpy(rdsInfo.radioText, tmpRadioText, firstSpacePosWithoutCharsAfter ? firstSpacePosWithoutCharsAfter : sizeof(rdsInfo.radioText));
             }
         } else if (blockB->groupType == 0) {
             /*
