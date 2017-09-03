@@ -47,6 +47,8 @@ void Si4703_Breakout::setChannel(int channel)
         readRegisters();
         if( (si4703_registers[STATUSRSSI] & (1<<STC)) == 0) break; //Tuning complete!
     }
+
+    clearRdsInfo();
 }
 
 int Si4703_Breakout::seekUp()
@@ -319,11 +321,7 @@ int Si4703_Breakout::seek(byte seekDirection){
         if( (si4703_registers[STATUSRSSI] & (1<<STC)) == 0) break; //Tuning complete!
     }
 
-    // put incorrect value to force clear
-    radioTextLastStateClearBit = 0xFF;
-    // clear RDS info
-    rdsInfo = RdsInfo();
-    memset(tmpStationName, 0, sizeof(tmpStationName));
+    clearRdsInfo();
 
     if(valueSFBL) { //The bit was set indicating we hit a band limit or failed to find a station
         return(0);
@@ -340,4 +338,17 @@ int Si4703_Breakout::getChannel() {
     //X = 0.1 * Chan + 87.5
     channel += 875; //98 + 875 = 973
     return(channel);
+}
+
+void Si4703_Breakout::clearRdsInfo()
+{
+    rdsInfo = RdsInfo();
+
+    memset(tmpStationName, 0, sizeof(tmpStationName));
+    memset(tmpRadioText, 0, sizeof(tmpRadioText));
+
+    // put incorrect value to force clear
+    radioTextLastStateClearBit = 0xFF;
+
+    alternateFrequenciesIndex = 0;
 }

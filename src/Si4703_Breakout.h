@@ -84,6 +84,7 @@ private:
     byte updateRegisters();
     int seek(byte seekDirection);
     int getChannel();
+    void clearRdsInfo();
     uint16_t si4703_registers[16]; //There are 16 registers, each 16 bits large
     static const uint16_t  FAIL = 0;
     static const uint16_t  SUCCESS = 1;
